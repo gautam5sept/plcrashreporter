@@ -88,7 +88,7 @@
 #import "PLCrashAsync.h"
 
 #import <pthread.h>
-#import <libkern/OSAtomic.h>
+#import <stdatomic.h>
 
 #import <mach/mach.h>
 #import <mach/exc.h>
@@ -798,9 +798,11 @@ static void *exception_server_thread (void *arg) {
     if (_serverContext == NULL) {
         return;
     }
-
+    atomic_int *isServerStop = (atomic_int *) &_serverContext->server_should_stop;
+    int expected = 0;
+    
     /* Mark the server for termination */
-    OSAtomicCompareAndSwap32Barrier(0, 1, (int32_t *) &_serverContext->server_should_stop);
+    atomic_compare_exchange_strong(isServerStop, expected, 1);
 
     /* Wake up the waiting server */
     mach_msg_header_t msg;
