@@ -35,6 +35,9 @@
 #include <atomic>
 
 PLCR_CPP_BEGIN_NS
+
+using namespace std;
+
 namespace async {
     
     
@@ -81,12 +84,14 @@ public:
         }
 
     private:
+        std::atomic<node> _a;
+        
         /**
          * Construct a new node with @a value.
          *
          * @param value The value for this node.
          */
-        node (V value) {
+        node (V value) : _a() {
             _value = value;
             _prev = NULL;
             _next = NULL;
@@ -281,7 +286,7 @@ template <typename V> void async_list<V>::nasync_append (V value) {
             _tail = new_node;
             
             /* Atomically update the list head; this will be iterated upon by lockless readers. */
-            if (!OSAtomicCompareAndSwapPtrBarrier(NULL, new_node, (void **) (&_head))) {
+            if (!std::atomic_compare_exchange_strong(&_head, NULL, new_node)) {
                 /* Should never occur */
                 PLCF_DEBUG("An async image head was set with tail == NULL despite holding lock.");
             }
@@ -353,12 +358,12 @@ template <typename V> void async_list<V>::nasync_remove_node (node *deleted_node
          * This serves as a synchronization point -- after the CAS, the item is no longer reachable via the list.
          */
         if (item == _head) {
-            if (!OSAtomicCompareAndSwapPtrBarrier(item, item->_next, (void **) &_head)) {
+            if (!std::atomic_compare_exchange_strong(&_head, item, item->_next)) {
                 PLCF_DEBUG("Failed to remove image list head despite holding lock");
             }
         } else {
             /* There MUST be a non-NULL prev pointer, as this is not HEAD. */
-            if (!OSAtomicCompareAndSwapPtrBarrier(item, item->_next, (void **) &item->_prev->_next)) {
+            if (!std::atomic_compare_exchange_strong(&item->_prev->_next, item, item->_next)) {
                 PLCF_DEBUG("Failed to remove image list item despite holding lock");
             }
         }

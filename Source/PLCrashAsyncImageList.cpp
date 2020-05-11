@@ -33,8 +33,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <atomic>
 
 using namespace plcrash::async;
+using namespace std;
 
 /**
  * @internal
@@ -206,7 +208,7 @@ plcrash_async_image_t *plcrash_async_image_list_next (plcrash_async_image_list_t
     
     /* Lazily swap in the cyclic node reference. This is pessimestic, but there's really not a better time to do it. */
     plcrash_async_image_t *image = node->value();
-    OSAtomicCompareAndSwapPtrBarrier(NULL, (void *) node, (void * volatile *) &image->_node);
+    std::atomic_compare_exchange_strong(&image->_node, NULL, (void *) node);
 
     return node->value();
 }

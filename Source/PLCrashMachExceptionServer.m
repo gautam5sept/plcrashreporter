@@ -191,7 +191,7 @@ struct plcrash_exception_server_context {
      * This value must be updated atomically and with a memory barrier, as it will be accessed
      * without locking.
      */
-    uint32_t server_should_stop;
+    atomic_uint_fast32_t server_should_stop;
 
     /** Intended to be observed by the waiting initialization thread. Informs
      * the waiting thread that shutdown has completed . */
@@ -802,7 +802,8 @@ static void *exception_server_thread (void *arg) {
     }
 
     /* Mark the server for termination */
-    OSAtomicCompareAndSwap32Barrier(0, 1, (int32_t *) &_serverContext->server_should_stop);
+    int expected = 0;
+    atomic_compare_exchange_strong((atomic_uint_fast32_t *) &_serverContext->server_should_stop, expected, 1);
 
     /* Wake up the waiting server */
     mach_msg_header_t msg;
