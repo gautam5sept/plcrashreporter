@@ -12,7 +12,7 @@ MACOS_DIR="macOS"
 XC_FRAMEWORK_PATH="${XCFRAMEWORK_DIR}/Output/${PROJECT_NAME}.xcframework"
 
 # Additionally copy macos files.
-cp -R "${SYMROOT}/${CONFIGURATION}-${MACOSX_DIR}/" "${XCFRAMEWORK_DIR}/"${CONFIGURATION}"-${MACOS_DIR}"
+cp -R "${BUILD_DIR}/${CONFIGURATION}-${MACOS_DIR}/" "${XCFRAMEWORK_DIR}/"${CONFIGURATION}"-${MACOS_DIR}"
 
 # Clean previus XCFramework build.
 rm -rf ${PROJECT_NAME}.xcframework/
