@@ -20,9 +20,9 @@ build() {
     echo "=== BUILD TARGET $1 OF PROJECT ${PROJECT_NAME} WITH CONFIGURATION ${CONFIGURATION} ==="
     # OBJROOT must be customized to avoid conflicts with the current process.
     xcodebuild -quiet \
-    PROJECT_TEMP_DIR="${PROJECT_TEMP_DIR}" \
+    SYMROOT="${SYMROOT}" OBJROOT="${BUILT_PRODUCTS_DIR}" PROJECT_TEMP_DIR="${PROJECT_TEMP_DIR}" \
         ONLY_ACTIVE_ARCH=NO BITCODE_GENERATION_MODE=bitcode OTHER_CFLAGS="-fembed-bitcode" \
-        -project "${PROJECT_NAME}.xcodeproj" -configuration "Release" -target "$1" -sdk "$2"
+        -project "${PROJECT_NAME}.xcodeproj" -configuration "${CONFIGURATION}" -target "$1" -sdk "$2"
 }
 echo "Building the library for ${DEVICE_SDK} and ${SIMULATOR_SDK}..."
 build "${TARGET_NAME}" "${DEVICE_SDK}"
@@ -30,8 +30,8 @@ build "${TARGET_NAME}" "${SIMULATOR_SDK}"
 
 # Copy all framework files to use them for xcframework file creation.
 mkdir -p "${XCFRAMEWORK_DIR}"
-cp -R "${WORK_DIR}/Release-${DEVICE_SDK}/" "${XCFRAMEWORK_DIR}/Release-${DEVICE_SDK}"
-cp -R "${WORK_DIR}/Release-${SIMULATOR_SDK}/" "${XCFRAMEWORK_DIR}/Release-${SIMULATOR_SDK}"
+cp -R "${BUILD_DIR}/${CONFIGURATION}-${DEVICE_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${DEVICE_SDK}"
+cp -R "${BUILD_DIR}/${CONFIGURATION}-${SIMULATOR_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${SIMULATOR_SDK}"
 
 # Clean output folder
 rm -rf "${BUILT_PRODUCTS_DIR}"
