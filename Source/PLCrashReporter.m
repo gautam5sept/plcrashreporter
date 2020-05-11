@@ -49,8 +49,6 @@
 #import <fcntl.h>
 #import <dlfcn.h>
 #import <mach-o/dyld.h>
-#import <stdatomic.h>
-#import <os/lock.h>
 
 #define NSDEBUG(msg, args...) {\
     NSLog(@"[PLCrashReporter] " msg, ## args); \
@@ -363,9 +361,8 @@ static void uncaught_exception_handler (NSException *exception) {
      * It is possible that another crash may occur between setting the uncaught
      * exception field, and triggering the signal handler.
      */
-    static atomic_int exception_is_handled = 0;
-    int expected = 0;
-    if (!atomic_compare_exchange_strong_explicit(&exception_is_handled, expected, 1, memory_order_seq_cst, memory_order_seq_cst)) {
+    static int32_t exception_is_handled = 0;
+    if (!OSAtomicCompareAndSwap32(0, 1, &exception_is_handled)) {
         return;
     }
     
@@ -428,11 +425,11 @@ static PLCrashReporter *sharedReporter = nil;
  */
 + (PLCrashReporter *) sharedReporter {
     /* Once we drop 10.5 support, this may be converted to dispatch_once() */
-    static os_unfair_lock *onceLock = OS_SPINLOCK_INIT;
-    os_unfair_lock_lock(onceLock); {
+    static OSSpinLock onceLock = OS_SPINLOCK_INIT;
+    OSSpinLockLock(&onceLock); {
         if (sharedReporter == nil)
             sharedReporter = [[PLCrashReporter alloc] initWithBundle: [NSBundle mainBundle] configuration: [PLCrashReporterConfig defaultConfiguration]];
-    } os_unfair_lock_unlock(onceLock);
+    } OSSpinLockUnlock(&onceLock);
 
     return sharedReporter;
 }

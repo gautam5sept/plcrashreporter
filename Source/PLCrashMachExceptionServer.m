@@ -88,10 +88,12 @@
 #import "PLCrashAsync.h"
 
 #import <pthread.h>
-#import <stdatomic.h>
+#import <libkern/OSAtomic.h>
 
 #import <mach/mach.h>
 #import <mach/exc.h>
+
+#import <stdatomic.h>
 
 /* The msgh_id to use for thread termination messages. This value most not conflict with the MACH_NOTIFY_NO_SENDERS msgh_id, which
  * is the only other value currently sent on the server notify port */
@@ -798,11 +800,9 @@ static void *exception_server_thread (void *arg) {
     if (_serverContext == NULL) {
         return;
     }
-    atomic_int *isServerStop = (atomic_int *) &_serverContext->server_should_stop;
-    int expected = 0;
-    
+
     /* Mark the server for termination */
-    atomic_compare_exchange_strong(isServerStop, expected, 1);
+    OSAtomicCompareAndSwap32Barrier(0, 1, (int32_t *) &_serverContext->server_should_stop);
 
     /* Wake up the waiting server */
     mach_msg_header_t msg;
