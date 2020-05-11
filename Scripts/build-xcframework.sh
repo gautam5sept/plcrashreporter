@@ -6,7 +6,7 @@
 # Work dir is directory where all XCFramework artifacts is stored.
 WORK_DIR="${SRCROOT}/build"
 XCFRAMEWORK_DIR="${WORK_DIR}/xcframework"
-MACOS_DIR="macos"
+MACOS_DIR="macOS"
 
 # Work dir will be the final output to the framework.
 XC_FRAMEWORK_PATH="${XCFRAMEWORK_DIR}/Output/${PROJECT_NAME}.xcframework"
