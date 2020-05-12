@@ -71,6 +71,7 @@ PLCR_C_BEGIN_DECLS
     
 #ifndef EXC_UNIX_ABORT
 #define EXC_UNIX_ABORT          0x10002     /* SIGABRT */
+#define EXC_SOFT_SIGNAL         0x40002     /* SIGKILL */
 #endif
 
 bool plcrash_async_mach_exception_get_siginfo (exception_type_t exception_type, mach_exception_data_t codes, mach_msg_type_number_t code_count, cpu_type_t cpu_type, siginfo_t *siginfo);

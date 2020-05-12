@@ -83,6 +83,7 @@ static NSString *PLCRASH_QUEUED_DIR = @"queued_reports";
  */
 static int monitored_signals[] = {
     SIGABRT,
+    SIGKILL,
     SIGBUS,
     SIGFPE,
     SIGILL,
@@ -606,6 +607,9 @@ static PLCrashReporter *sharedReporter = nil;
              * EXC_CRASH. */
             if (![[PLCrashSignalHandler sharedHandler] registerHandlerForSignal: SIGABRT callback: &signal_handler_callback context: &signal_handler_context error: outError])
                 return NO;
+            
+            if (![[PLCrashSignalHandler sharedHandler] registerHandlerForSignal: SIGKILL callback: &signal_handler_callback context: &signal_handler_context error: outError])
+            return NO;
             
             /* Enable the server. */
             _machServer = [self enableMachExceptionServerWithPreviousPortSet:  &_previousMachPorts

@@ -56,6 +56,7 @@ static struct signal_name signal_names[] = {
     { SIGILL,   "SIGILL" },
     { SIGTRAP,  "SIGTRAP" },
     { SIGABRT,  "SIGABRT" },
+    { SIGKILL,  "SIGKILL" },
 #ifdef SIGPOLL
     // XXX Is this supported?
     { SIGPOLL,  "SIGPOLL" },
@@ -129,6 +130,7 @@ static struct signal_code signal_codes[] = {
 
     /* SIGABRT */
     { SIGABRT,  0,              "#0"          },
+    { SIGKILL,  1,              "#1"          },
 
     { 0, 0, NULL }
 };
