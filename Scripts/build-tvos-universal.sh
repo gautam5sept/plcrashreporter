@@ -2,7 +2,6 @@
 set -e
 
 # Helper variables
-WORK_DIR=build
 DEVICE_SDK="appletvos"
 SIMULATOR_SDK="appletvsimulator"
 TARGET_NAME="${PROJECT_NAME} tvOS Framework"
@@ -10,9 +9,6 @@ DEVICE_DIR="${BUILD_DIR}/${CONFIGURATION}-${DEVICE_SDK}"
 SIMULATOR_DIR="${BUILD_DIR}/${CONFIGURATION}-${SIMULATOR_SDK}"
 LIBRARY_BINARY="lib${PRODUCT_NAME}.a"
 FRAMEWORK_BINARY="${PRODUCT_NAME}.framework/${PRODUCT_NAME}"
-
-# The directory to gather all frameworks and build it into xcframework.
-XCFRAMEWORK_DIR="${WORK_DIR}/xcframework"
 
 # Building both SDKs
 build() {
@@ -27,11 +23,6 @@ build() {
 echo "Building the library for ${DEVICE_SDK} and ${SIMULATOR_SDK}..."
 build "${TARGET_NAME}" "${DEVICE_SDK}"
 build "${TARGET_NAME}" "${SIMULATOR_SDK}"
-
-# Copy all framework files to use them for xcframework file creation.
-mkdir -p "${XCFRAMEWORK_DIR}"
-cp -R "${BUILD_DIR}/${CONFIGURATION}-${DEVICE_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${DEVICE_SDK}"
-cp -R "${BUILD_DIR}/${CONFIGURATION}-${SIMULATOR_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${SIMULATOR_SDK}"
 
 # Clean output folder
 rm -rf "${BUILT_PRODUCTS_DIR}"

@@ -7,29 +7,39 @@
 WORK_DIR="${SRCROOT}/build"
 XCFRAMEWORK_DIR="${WORK_DIR}/xcframework"
 MACOS_DIR="macOS"
+TVOS_DEVICE_SDK="appletvos"
+TVOS_SIMULATOR_SDK="appletvsimulator"
+IOS_DEVICE_SDK="iphoneos"
+IOS_SIMULATOR_SDK="iphonesimulator"
 
-# Work dir will be the final output to the framework.
+# Output dir will be the final output to to the framework.
 XC_FRAMEWORK_PATH="${XCFRAMEWORK_DIR}/Output/${PROJECT_NAME}.xcframework"
 
-# Additionally copy macos files.
+# Copy all framework files to use them for xcframework file creation.
+mkdir -p "${XCFRAMEWORK_DIR}"
 cp -R "${BUILD_DIR}/${CONFIGURATION}-${MACOS_DIR}/" "${XCFRAMEWORK_DIR}/"${CONFIGURATION}"-${MACOS_DIR}"
+cp -R "${BUILD_DIR}/${CONFIGURATION}-${IOS_DEVICE_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${IOS_DEVICE_SDK}"
+cp -R "${BUILD_DIR}/${CONFIGURATION}-${IOS_SIMULATOR_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${IOS_SIMULATOR_SDK}"
+cp -R "${BUILD_DIR}/${CONFIGURATION}-${TVOS_DEVICE_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${TVOS_DEVICE_SDK}"
+cp -R "${BUILD_DIR}/${CONFIGURATION}-${TVOS_SIMULATOR_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${TVOS_SIMULATOR_SDK}"
 
 # Clean previus XCFramework build.
 rm -rf ${PROJECT_NAME}.xcframework/
 
 # Build XCFramework.
 function SetXcBuildCommandFramework() {
-    FRAMEWORK_PATH="$XCFRAMEWORK_DIR/"${CONFIGURATION}"-$1/${PROJECT_NAME}.framework"
-    echo $FRAMEWORK_PATH
+    FRAMEWORK_PATH="$XCFRAMEWORK_DIR/${CONFIGURATION}-$1/${PROJECT_NAME}.framework"
     [ -e "$FRAMEWORK_PATH" ] && XC_BUILD_COMMAND="$XC_BUILD_COMMAND -framework $FRAMEWORK_PATH";
 }
 
-# Create a cycle instead next lines
-SetXcBuildCommandFramework "iphoneos"
-SetXcBuildCommandFramework "iphonesimulator"
-SetXcBuildCommandFramework "appletvos"
-SetXcBuildCommandFramework "appletvsimulator"
-SetXcBuildCommandFramework "$MACOS_DIR"
+for arch_name in $IOS_DEVICE_SDK $IOS_SIMULATOR_SDK $TVOS_DEVICE_SDK $TVOS_SIMULATOR_SDK $MACOS_DIR; do
+  SetXcBuildCommandFramework $arch_name
+done
+
+if [ -z "$XC_BUILD_COMMAND" ]; then
+  echo "You must build 'Disk Image' before executing this scheme."
+  exit 1
+fi
 
 XC_BUILD_COMMAND="xcodebuild -create-xcframework $XC_BUILD_COMMAND -output $XC_FRAMEWORK_PATH"
 eval "$XC_BUILD_COMMAND"
