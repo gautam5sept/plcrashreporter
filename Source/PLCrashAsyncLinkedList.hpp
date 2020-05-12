@@ -36,8 +36,6 @@
 
 PLCR_CPP_BEGIN_NS
 
-using namespace std;
-
 namespace async {
     
     
@@ -84,14 +82,13 @@ public:
         }
 
     private:
-        std::atomic<node> _a;
         
         /**
          * Construct a new node with @a value.
          *
          * @param value The value for this node.
          */
-        node (V value) : _a() {
+        node (V value) {
             _value = value;
             _prev = NULL;
             _next = NULL;
@@ -117,6 +114,8 @@ public:
         /** The next image in the list, or NULL. */
         node *_next;
     };
+    
+    typedef _Atomic(node) AtomicNode;
 
     async_list (void);
     ~async_list (void);
@@ -225,7 +224,10 @@ template <typename V> void async_list<V>::nasync_prepend (V value) {
             _tail = new_node;
             
             /* Atomically update the list head; this will be iterated upon by lockless readers. */
-            if (!OSAtomicCompareAndSwapPtrBarrier(NULL, new_node, (void **) (&_head))) {
+            volatile AtomicNode atomicHead;
+           __c11_atomic_init(&atomicHead, *_head);
+            node* expected = NULL;
+            if (!__c11_atomic_compare_exchange_strong(&atomicHead, expected, *new_node, std::memory_order_seq_cst, std::memory_order_relaxed)) {
                 /* Should never occur */
                 PLCF_DEBUG("An async image head was set with tail == NULL despite holding lock.");
             }
@@ -242,9 +244,11 @@ template <typename V> void async_list<V>::nasync_prepend (V value) {
 
             /* Issue a memory barrier to ensure a consistent view of the nodes. */
             std::atomic_thread_fence(std::memory_order_seq_cst);
-
+             volatile AtomicNode atomicHead;
+            __c11_atomic_init(&atomicHead, *_head);
+            
             /* Atomically slot the new record into place; this may be iterated on by a lockless reader. */
-            if (!OSAtomicCompareAndSwapPtrBarrier(new_node->_next, new_node, (void **) (&_head))) {
+            if (!__c11_atomic_compare_exchange_strong(&atomicHead, new_node->_next, *new_node, std::memory_order_seq_cst, std::memory_order_relaxed)) {
                 PLCF_DEBUG("Failed to prepend to image list despite holding lock");
             }
         }
@@ -286,7 +290,10 @@ template <typename V> void async_list<V>::nasync_append (V value) {
             _tail = new_node;
             
             /* Atomically update the list head; this will be iterated upon by lockless readers. */
-            if (!std::atomic_compare_exchange_strong(&_head, NULL, new_node)) {
+            volatile AtomicNode atomicHeader;
+            __c11_atomic_init(&atomicHeader, *_head);
+            node* expected = NULL;
+            if (!__c11_atomic_compare_exchange_strong(&atomicHeader, expected, *new_node, std::memory_order_seq_cst, std::memory_order_relaxed)) {
                 /* Should never occur */
                 PLCF_DEBUG("An async image head was set with tail == NULL despite holding lock.");
             }
@@ -295,7 +302,10 @@ template <typename V> void async_list<V>::nasync_append (V value) {
         /* Otherwise, append to the end of the list */
         else {
             /* Atomically slot the new record into place; this may be iterated on by a lockless reader. */
-            if (!OSAtomicCompareAndSwapPtrBarrier(NULL, new_node, (void **) (&_tail->_next))) {
+            volatile AtomicNode atomicNext;
+            __c11_atomic_init(&atomicNext, *_tail->_next);
+            node* expected = NULL;
+            if (!__c11_atomic_compare_exchange_strong(&atomicNext, expected, *new_node, std::memory_order_seq_cst, std::memory_order_relaxed)) {
                 PLCF_DEBUG("Failed to append to image list despite holding lock");
             }
             
@@ -337,6 +347,7 @@ template <typename V> void async_list<V>::nasync_remove_first_value (V value) {
 template <typename V> void async_list<V>::nasync_remove_node (node *deleted_node) {
     /* Lock the list from other writers. */
     os_unfair_lock_lock(_write_lock); {
+        
         /* Find the record. */
         node *item = _head;
         while (item != NULL) {
@@ -358,12 +369,16 @@ template <typename V> void async_list<V>::nasync_remove_node (node *deleted_node
          * This serves as a synchronization point -- after the CAS, the item is no longer reachable via the list.
          */
         if (item == _head) {
-            if (!std::atomic_compare_exchange_strong(&_head, item, item->_next)) {
+            volatile AtomicNode atomicHeader;
+            __c11_atomic_init(&atomicHeader, *_head);
+            if (!__c11_atomic_compare_exchange_strong(&atomicHeader, item, *item->_next, std::memory_order_seq_cst, std::memory_order_relaxed)) {
                 PLCF_DEBUG("Failed to remove image list head despite holding lock");
             }
         } else {
             /* There MUST be a non-NULL prev pointer, as this is not HEAD. */
-            if (!std::atomic_compare_exchange_strong(&item->_prev->_next, item, item->_next)) {
+            volatile AtomicNode atomicNext;
+            __c11_atomic_init(&atomicNext, *item->_prev->_next);
+            if (!__c11_atomic_compare_exchange_strong(&atomicNext, item, *item->_next, std::memory_order_seq_cst, std::memory_order_relaxed)) {
                 PLCF_DEBUG("Failed to remove image list item despite holding lock");
             }
         }
