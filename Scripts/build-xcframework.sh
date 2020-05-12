@@ -17,11 +17,6 @@ XC_FRAMEWORK_PATH="${XCFRAMEWORK_DIR}/Output/${PROJECT_NAME}.xcframework"
 
 # Copy all framework files to use them for xcframework file creation.
 mkdir -p "${XCFRAMEWORK_DIR}"
-cp -R "${BUILD_DIR}/${CONFIGURATION}-${MACOS_DIR}/" "${XCFRAMEWORK_DIR}/"${CONFIGURATION}"-${MACOS_DIR}"
-cp -R "${BUILD_DIR}/${CONFIGURATION}-${IOS_DEVICE_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${IOS_DEVICE_SDK}"
-cp -R "${BUILD_DIR}/${CONFIGURATION}-${IOS_SIMULATOR_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${IOS_SIMULATOR_SDK}"
-cp -R "${BUILD_DIR}/${CONFIGURATION}-${TVOS_DEVICE_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${TVOS_DEVICE_SDK}"
-cp -R "${BUILD_DIR}/${CONFIGURATION}-${TVOS_SIMULATOR_SDK}/" "${XCFRAMEWORK_DIR}/${CONFIGURATION}-${TVOS_SIMULATOR_SDK}"
 
 # Clean previus XCFramework build.
 rm -rf ${PROJECT_NAME}.xcframework/
@@ -33,6 +28,7 @@ function SetXcBuildCommandFramework() {
 }
 
 for arch_name in $IOS_DEVICE_SDK $IOS_SIMULATOR_SDK $TVOS_DEVICE_SDK $TVOS_SIMULATOR_SDK $MACOS_DIR; do
+  cp -R "${BUILD_DIR}/${CONFIGURATION}-$arch_name/" "${XCFRAMEWORK_DIR}/"${CONFIGURATION}"-$arch_name"
   SetXcBuildCommandFramework $arch_name
 done
 
